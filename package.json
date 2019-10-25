@@ -1,0 +1,27 @@
+{
+  "name": "object-prototype",
+  "version": "0.0.0",
+  "description": "A replacement prototype for `Object.prototype` with all the same functions",
+  "main": "index.js",
+  "dependencies": {
+    "object-prototype-functions": "^1.1.0"
+  },
+  "devDependencies": {
+    "standard": "^14.3.1",
+    "tape": "^4.11.0"
+  },
+  "scripts": {
+    "test": "standard && node test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/watson/object-prototype.git"
+  },
+  "keywords": [],
+  "author": "Thomas Watson <w@tson.dk> (https://twitter.com/wa7son)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/watson/object-prototype/issues"
+  },
+  "homepage": "https://github.com/watson/object-prototype#readme"
+}
