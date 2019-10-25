@@ -16,7 +16,7 @@ npm install object-prototype --save
 ## Usage
 
 ```js
-const { create }  = require('object-prototype')
+const { create } = require('object-prototype')
 
 const obj1 = create()
 const obj2 = {}
