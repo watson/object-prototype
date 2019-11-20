@@ -38,7 +38,8 @@ console.log(obj2.foo) // 42
 ### `ObjectPrototype`
 
 The `ObjectPrototype` property exposed by this module is ment as a
-replacement to `Object.prototype` and has the following functions:
+replacement to `Object.prototype` and has the following ECMAScript
+spec'd functions:
 
 - [`ObjectPrototype.hasOwnProperty()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/hasOwnProperty)
 - [`ObjectPrototype.isPrototypeOf()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/isPrototypeOf)
@@ -46,6 +47,14 @@ replacement to `Object.prototype` and has the following functions:
 - [`ObjectPrototype.toLocaleString()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/toLocaleString)
 - [`ObjectPrototype.toString()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/toString)
 - [`ObjectPrototype.valueOf()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/valueOf)
+
+And the following functions which are considered deprecated according to
+the ECMAScript specification:
+
+- [`ObjectPrototype.__defineGetter__()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/__defineGetter__)
+- [`ObjectPrototype.__defineSetter__()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/__defineSetter__)
+- [`ObjectPrototype.__lookupGetter__()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/__lookupGetter__)
+- [`ObjectPrototype.__lookupSetter__()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/__lookupSetter__)
 
 ### `object = create()`
 

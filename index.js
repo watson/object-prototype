@@ -1,6 +1,6 @@
 'use strict'
 
-const functions = require('object-prototype-functions')
+const functions = require('object-prototype-functions').nodejs
 
 const ObjectPrototype = Object.create(null)
 

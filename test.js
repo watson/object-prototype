@@ -3,7 +3,7 @@
 /* eslint-disable no-prototype-builtins, no-proto */
 
 const test = require('tape')
-const functions = require('object-prototype-functions')
+const functions = require('object-prototype-functions').nodejs
 const { create, ObjectPrototype } = require('./')
 
 const generators = [create, () => Object.create(ObjectPrototype)]
@@ -98,6 +98,40 @@ generators.forEach(generator => {
     const obj = generator()
     t.deepEqual(obj.valueOf(), obj)
     t.end()
+  })
+
+  test('__defineGetter__', function (t) {
+    const obj = generator()
+    obj.__defineGetter__('foo', () => 'works!')
+    t.equal(obj.foo, 'works!')
+    t.end()
+  })
+
+  test('__defineSetter__', function (t) {
+    const obj = generator()
+    obj.__defineSetter__('foo', (x) => {
+      t.equal(x, 'works!')
+      t.end()
+    })
+    obj.foo = 'works!'
+  })
+
+  test('__lookupGetter__', function (t) {
+    const obj = generator()
+    obj.__defineGetter__('foo', () => 'works!')
+    const getter = obj.__lookupGetter__('foo')
+    t.equal(getter(), 'works!')
+    t.end()
+  })
+
+  test('__lookupSetter__', function (t) {
+    const obj = generator()
+    obj.__defineSetter__('foo', (x) => {
+      t.equal(x, 'works!')
+      t.end()
+    })
+    const setter = obj.__lookupSetter__('foo')
+    setter('works!')
   })
 })
 

@@ -4,7 +4,7 @@
   "description": "A replacement prototype for `Object.prototype` with all the same functions",
   "main": "index.js",
   "dependencies": {
-    "object-prototype-functions": "^1.1.0"
+    "object-prototype-functions": "^1.2.0"
   },
   "devDependencies": {
     "standard": "^14.3.1",
