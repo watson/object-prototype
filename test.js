@@ -35,6 +35,18 @@ generators.forEach(generator => {
     t.end()
   })
 
+  test('__proto__', function (t) {
+    const obj = generator()
+    t.equal(obj.__proto__, undefined)
+    t.end()
+  })
+
+  test('constructor', function (t) {
+    const obj = generator()
+    t.equal(obj.constructor, undefined)
+    t.end()
+  })
+
   test('hasOwnProperty', function (t) {
     const obj1 = generator()
     const obj2 = Object.create(obj1)
