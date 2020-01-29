@@ -4,9 +4,13 @@
 
 const test = require('tape')
 const functions = require('object-prototype-functions').nodejs
-const { create, ObjectPrototype } = require('./')
+const { create, assign, ObjectPrototype } = require('./')
 
-const generators = [create, () => Object.create(ObjectPrototype)]
+const generators = [
+  create,
+  assign,
+  () => Object.create(ObjectPrototype)
+]
 
 generators.forEach(generator => {
   test('functionProto', function (t) {
@@ -133,6 +137,21 @@ generators.forEach(generator => {
     const setter = obj.__lookupSetter__('foo')
     setter('works!')
   })
+})
+
+test('assign', function (t) {
+  const obj1 = { a: 1, b: 2 }
+  const obj2 = { a: 2, c: 3 }
+  const obj3 = assign(obj1, obj2)
+  obj1.b = 42
+  obj2.c = 42
+  t.equal(obj3.a, 2)
+  t.equal(obj3.b, 2)
+  t.equal(obj3.c, 3)
+  obj3.a = 42
+  t.equal(obj1.a, 1)
+  t.equal(obj2.a, 2)
+  t.end()
 })
 
 function functionProto (fn) {

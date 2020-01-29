@@ -63,6 +63,15 @@ object with `ObjectPrototype` as its prototype.
 
 This is equivalent to writing `Object.create(ObjectPrototype)`.
 
+### `object = assign([...objects])`
+
+The `assign` function is a convenience function that returns a new
+object with all the same properties as the provided objects, but with
+`ObjectPrototype` as its prototype.
+
+This is equivalent to writing
+`Object.assign(Object.create(ObjectPrototype), ...objects)`.
+
 ## License
 
 [MIT](LICENSE)
