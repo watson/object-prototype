@@ -1,6 +1,6 @@
 {
   "name": "object-prototype",
-  "version": "2.1.0",
+  "version": "3.0.0",
   "description": "A replacement prototype for `Object.prototype` with all the same functions",
   "main": "index.js",
   "dependencies": {
@@ -31,7 +31,7 @@
   },
   "homepage": "https://github.com/watson/object-prototype#readme",
   "coordinates": [
-    56.009748,
-    11.961618
+    56.009798,
+    11.962138
   ]
 }
