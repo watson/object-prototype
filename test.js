@@ -6,6 +6,16 @@ const test = require('tape')
 const functions = require('object-prototype-functions').nodejs
 const { create, assign, ObjectPrototype } = require('./')
 
+test('ObjectPrototype.__proto__', function (t) {
+  t.equal(ObjectPrototype.__proto__, null)
+  t.end()
+})
+
+test('ObjectPrototype.constructor', function (t) {
+  t.equal(ObjectPrototype.constructor, undefined)
+  t.end()
+})
+
 const generators = [
   create,
   assign,
@@ -39,9 +49,30 @@ generators.forEach(generator => {
     t.end()
   })
 
+  test('Object.getPrototypeOf', function (t) {
+    const obj = generator()
+    t.equal(Object.getPrototypeOf(obj), ObjectPrototype)
+    t.end()
+  })
+
   test('__proto__', function (t) {
     const obj = generator()
-    t.equal(obj.__proto__, undefined)
+    t.equal(obj.__proto__, ObjectPrototype)
+    t.end()
+  })
+
+  test('__proto__ =', function (t) {
+    const obj = generator()
+    const someObj = {}
+    obj.__proto__ = someObj
+    t.equal(obj.__proto__, someObj)
+    t.equal(Object.getPrototypeOf(obj), someObj)
+    t.end()
+  })
+
+  test('__proto__.__proto__', function (t) {
+    const obj = generator()
+    t.equal(obj.__proto__.__proto__, null)
     t.end()
   })
 
