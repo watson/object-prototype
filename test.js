@@ -3,11 +3,109 @@
 /* eslint-disable no-prototype-builtins, no-proto */
 
 const test = require('tape')
+const debug = require('debug')('tests')
 const functions = require('object-prototype-functions').nodejs
-const { create, assign, ObjectPrototype } = require('./')
+const { create, assign, ObjectPrototype, FunctionPrototype, safePrototypeFunction } = require('./')
+
+test('doesObjectLeak', function (t) {
+  t.ok(doesObjectLeak(function () {}))
+  t.ok(doesObjectLeak(() => {}))
+  t.ok(doesObjectLeak({}))
+  t.ok(doesObjectLeak(Object))
+  t.ok(doesObjectLeak(Function))
+  t.ok(doesObjectLeak(Object.prototype))
+  t.ok(doesObjectLeak(Function.prototype))
+  t.notOk(doesObjectLeak(Object.create(null)))
+  t.end()
+})
+
+test('FunctionPrototype.__proto__', function (t) {
+  t.equal(FunctionPrototype.__proto__, ObjectPrototype)
+  assertNoLeak(t, FunctionPrototype.__lookupGetter__('__proto__'), 'FunctionPrototype.__lookupGetter__(\'__proto__\')')
+  assertNoLeak(t, FunctionPrototype.__lookupSetter__('__proto__'), 'FunctionPrototype.__lookupSetter__(\'__proto__\')')
+  t.end()
+})
+
+test('FunctionPrototype.length', function (t) {
+  t.equal(Function.prototype.length, 0)
+  t.equal(FunctionPrototype.length, 0)
+
+  t.equal((() => {}).length, 0)
+  t.equal(((a, b) => {}).length, 2)
+  t.equal(function () {}.length, 0)
+  t.equal(function (a, b) {}.length, 2)
+
+  t.equal(safePrototypeFunction(() => {}).length, 0)
+  t.equal(safePrototypeFunction((a, b) => {}).length, 2)
+  t.equal(safePrototypeFunction(function () {}).length, 0)
+  t.equal(safePrototypeFunction(function (a, b) {}).length, 2)
+
+  t.end()
+})
+
+test('FunctionPrototype.name', function (t) {
+  t.equal(Function.prototype.name, '')
+  t.equal(FunctionPrototype.name, '')
+
+  t.equal((() => {}).name, '')
+  t.equal(function () {}.name, '')
+  t.equal(function foo () {}.name, 'foo')
+
+  t.equal(safePrototypeFunction(() => {}).name, '')
+  t.equal(safePrototypeFunction(function () {}).name, '')
+  t.equal(safePrototypeFunction(function foo () {}).name, 'foo')
+
+  t.end()
+})
+
+test('FunctionPrototype.arguments', function (t) {
+  assertNoLeak(t, FunctionPrototype.__lookupGetter__('arguments'), 'FunctionPrototype.__lookupGetter__(\'arguments\')')
+  assertNoLeak(t, FunctionPrototype.__lookupSetter__('arguments'), 'FunctionPrototype.__lookupSetter__(\'arguments\')')
+  t.end()
+})
+
+test('FunctionPrototype.caller', function (t) {
+  assertNoLeak(t, FunctionPrototype.__lookupGetter__('caller'), 'FunctionPrototype.__lookupGetter__(\'caller\')')
+  assertNoLeak(t, FunctionPrototype.__lookupSetter__('caller'), 'FunctionPrototype.__lookupSetter__(\'caller\')')
+  t.end()
+})
+
+test('Object.getPrototypeOf(FunctionPrototype)', function (t) {
+  t.equal(Object.getPrototypeOf(FunctionPrototype), ObjectPrototype)
+  t.end()
+})
+
+test('FunctionPrototype.constructor', function (t) {
+  t.equal(FunctionPrototype.constructor, undefined)
+  t.end()
+})
+
+test('FunctionPrototype doesn\'t leak', function (t) {
+  assertNoLeak(t, FunctionPrototype)
+
+  var fn = function () {}
+  Object.setPrototypeOf(fn, FunctionPrototype)
+  fn.prototype.__proto__ = FunctionPrototype
+
+  assertNoLeak(t, fn)
+  t.end()
+})
+
+test('safePrototypeFunction doesn\'t leak', function (t) {
+  var fn = safePrototypeFunction(function () {})
+  assertNoLeak(t, fn)
+  t.end()
+})
 
 test('ObjectPrototype.__proto__', function (t) {
   t.equal(ObjectPrototype.__proto__, null)
+  assertNoLeak(t, ObjectPrototype.__lookupGetter__('__proto__'), 'ObjectPrototype.__lookupGetter__(\'__proto__\')')
+  assertNoLeak(t, ObjectPrototype.__lookupSetter__('__proto__'), 'ObjectPrototype.__lookupSetter__(\'__proto__\')')
+  t.end()
+})
+
+test('Object.getPrototypeOf(ObjectPrototype)', function (t) {
+  t.equal(Object.getPrototypeOf(ObjectPrototype), null)
   t.end()
 })
 
@@ -23,29 +121,16 @@ const generators = [
 ]
 
 generators.forEach(generator => {
-  test('functionProto', function (t) {
-    t.equal(functionProto(function () {}), Object.prototype)
-    t.equal(functionProto(() => {}), Object.prototype)
-    t.end()
-  })
-
   test('functions doesn\'t leak', function (t) {
     const obj = generator()
     for (const name of functions) {
-      t.notEqual(functionProto(obj[name]), Object.prototype, name)
+      assertNoLeak(t, obj[name], name)
     }
     t.end()
   })
 
   test('inheritance', function (t) {
-    t.plan(3)
-
-    let obj = Object.create(generator())
-
-    do {
-      t.notEqual(obj, Object.prototype, 'should not inherit from Object.prototype')
-    } while ((obj = Object.getPrototypeOf(obj)) !== null)
-
+    assertNoLeak(t, Object.create(generator()))
     t.end()
   })
 
@@ -85,25 +170,39 @@ generators.forEach(generator => {
   test('hasOwnProperty', function (t) {
     const obj1 = generator()
     const obj2 = Object.create(obj1)
+
     obj1.foo = 42
-    t.equal(obj1.hasOwnProperty('foo'), true)
-    t.equal(obj1.hasOwnProperty('bar'), false)
-    t.equal(obj1.hasOwnProperty('hasOwnProperty'), false)
-    t.equal(obj2.hasOwnProperty('foo'), false)
-    t.equal(obj2.hasOwnProperty('hasOwnProperty'), false)
+
+    assertExecution(t, 'hasOwnProperty', { obj: obj1, args: ['foo'], expected: true })
+    assertExecution(t, 'hasOwnProperty', { obj: obj1, args: ['bar'], expected: false })
+    assertExecution(t, 'hasOwnProperty', { obj: obj1, args: ['hasOwnProperty'], expected: false })
+
+    assertExecution(t, 'hasOwnProperty', { obj: obj2, args: ['foo'], expected: false })
+    assertExecution(t, 'hasOwnProperty', { obj: obj2, args: ['hasOwnProperty'], expected: false })
+
+    assertNonExecutingFunctionPrototypeFunctions(t, 'hasOwnProperty', { obj: obj1 })
+    assertNonExecutingFunctionPrototypeFunctions(t, 'hasOwnProperty', { obj: obj2 })
+
     t.end()
   })
 
   test('isPrototypeOf', function (t) {
     const obj1 = generator()
     const obj2 = Object.create(obj1)
+
     t.equal(Object.prototype.isPrototypeOf(ObjectPrototype), false)
     t.equal(Object.prototype.isPrototypeOf(obj1), false)
     t.equal(Object.prototype.isPrototypeOf(obj2), false)
-    t.equal(ObjectPrototype.isPrototypeOf(obj1), true)
-    t.equal(ObjectPrototype.isPrototypeOf(obj2), true)
-    t.equal(obj1.isPrototypeOf(obj2), true)
-    t.equal(obj2.isPrototypeOf(obj1), false)
+
+    assertExecution(t, 'isPrototypeOf', { obj: ObjectPrototype, args: [obj1], expected: true })
+    assertExecution(t, 'isPrototypeOf', { obj: ObjectPrototype, args: [obj2], expected: true })
+
+    assertExecution(t, 'isPrototypeOf', { obj: obj1, args: [obj2], expected: true })
+    assertExecution(t, 'isPrototypeOf', { obj: obj2, args: [obj1], expected: false })
+
+    assertNonExecutingFunctionPrototypeFunctions(t, 'isPrototypeOf', { obj: obj1 })
+    assertNonExecutingFunctionPrototypeFunctions(t, 'isPrototypeOf', { obj: obj2 })
+
     t.end()
   })
 
@@ -111,62 +210,88 @@ generators.forEach(generator => {
     const obj = generator()
     Object.defineProperty(obj, 'foo', { enumerable: false })
     Object.defineProperty(obj, 'bar', { enumerable: true })
-    t.equal(obj.propertyIsEnumerable('foo'), false)
-    t.equal(obj.propertyIsEnumerable('bar'), true)
-    t.equal(obj.propertyIsEnumerable('invalid'), false)
+    assertExecution(t, 'propertyIsEnumerable', { obj, args: ['foo'], expected: false })
+    assertExecution(t, 'propertyIsEnumerable', { obj, args: ['bar'], expected: true })
+    assertExecution(t, 'propertyIsEnumerable', { obj, args: ['invalid'], expected: false })
+    assertNonExecutingFunctionPrototypeFunctions(t, 'propertyIsEnumerable', { obj })
     t.end()
   })
 
   test('toLocaleString', function (t) {
     const obj = generator()
-    t.equal(obj.toLocaleString(), obj.toString())
+    assertFunction(t, 'toLocaleString', { obj, expected: obj.toString() })
     t.end()
   })
 
   test('toString', function (t) {
-    const obj = generator()
-    t.equal(obj.toString(), '[object Object]')
+    assertFunction(t, 'toString', { generator, expected: '[object Object]' })
     t.end()
   })
 
   test('valueOf', function (t) {
     const obj = generator()
-    t.deepEqual(obj.valueOf(), obj)
+    assertFunction(t, 'valueOf', { obj, expected: obj })
     t.end()
   })
 
   test('__defineGetter__', function (t) {
-    const obj = generator()
-    obj.__defineGetter__('foo', () => 'works!')
-    t.equal(obj.foo, 'works!')
-    t.end()
+    t.plan(16)
+    assertFunction(t, '__defineGetter__', {
+      generator,
+      args: ['foo', () => 'works!'],
+      expected: undefined,
+      afterCall: obj => {
+        t.equal(obj.foo, 'works!', 'should return value when accessing getter property')
+      }
+    })
   })
 
   test('__defineSetter__', function (t) {
-    const obj = generator()
-    obj.__defineSetter__('foo', (x) => {
-      t.equal(x, 'works!')
-      t.end()
+    t.plan(16)
+    assertFunction(t, '__defineSetter__', {
+      generator,
+      args: [
+        'foo',
+        (x) => t.equal(x, 'works!', 'should call setter with set value')
+      ],
+      expected: undefined,
+      afterCall: obj => {
+        obj.foo = 'works!'
+      }
     })
-    obj.foo = 'works!'
   })
 
   test('__lookupGetter__', function (t) {
+    t.plan(11)
+
     const obj = generator()
     obj.__defineGetter__('foo', () => 'works!')
-    const getter = obj.__lookupGetter__('foo')
-    t.equal(getter(), 'works!')
-    t.end()
+
+    assertFunction(t, '__lookupGetter__', {
+      obj,
+      args: ['foo'],
+      assert: (getter, msg) => t.equal(getter(), 'works!', msg + '()')
+    })
   })
 
   test('__lookupSetter__', function (t) {
+    t.plan(11)
+
     const obj = generator()
+    let msg
+
     obj.__defineSetter__('foo', (x) => {
-      t.equal(x, 'works!')
-      t.end()
+      t.equal(x, 'works!', msg)
     })
-    const setter = obj.__lookupSetter__('foo')
-    setter('works!')
+
+    assertFunction(t, '__lookupSetter__', {
+      obj,
+      args: ['foo'],
+      assert: (setter, _msg) => {
+        msg = _msg + '()'
+        setter('works!')
+      }
+    })
   })
 })
 
@@ -185,16 +310,91 @@ test('assign', function (t) {
   t.end()
 })
 
-function functionProto (fn) {
-  return (
-    fn &&
-    fn.constructor &&
-    fn.constructor.prototype &&
-    fn.constructor.prototype.__proto__
-  ) || (
-    fn &&
-    fn.constructor &&
-    fn.constructor.__proto__ &&
-    fn.constructor.__proto__.__proto__
-  )
+function assertFunction (t, name, opts) {
+  assertExecution(t, name, opts)
+  assertNonExecutingFunctionPrototypeFunctions(t, name, opts)
+}
+
+function assertNonExecutingFunctionPrototypeFunctions (t, name, {
+  obj: _obj,
+  generator = () => _obj
+}) {
+  const obj = generator()
+
+  // TODO: This is only the case in script-mode. How do we support and test non-script mode?
+  t.throws(function () {
+    obj[name].arguments // eslint-disable-line no-unused-expressions
+  }, '\'caller\', \'callee\', and \'arguments\' properties may not be accessed on strict mode functions or the arguments objects for calls to them', `${name}.arguments`)
+
+  // TODO: This is only the case in script-mode. How do we support and test non-script mode?
+  t.throws(function () {
+    obj[name].arguments = 42
+  }, '\'caller\', \'callee\', and \'arguments\' properties may not be accessed on strict mode functions or the arguments objects for calls to them', `obj.${name}.arguments =`)
+
+  // TODO: This is only the case in script-mode. How do we support and test non-script mode?
+  t.throws(function () {
+    obj[name].caller // eslint-disable-line no-unused-expressions
+  }, '\'caller\', \'callee\', and \'arguments\' properties may not be accessed on strict mode functions or the arguments objects for calls to them', `obj.${name}.caller`)
+
+  // TODO: This is only the case in script-mode. How do we support and test non-script mode?
+  t.throws(function () {
+    obj[name].caller = 42
+  }, '\'caller\', \'callee\', and \'arguments\' properties may not be accessed on strict mode functions or the arguments objects for calls to them', `obj.${name}.caller =`)
+
+  t.equal(obj[name].toString(obj), ({})[name].toString(), `obj.${name}.toString()`)
+
+  assertNoLeak(t, obj[name].bind(obj), `obj.${name}.bind(obj)`)
+}
+
+function assertExecution (t, name, {
+  obj: _obj,
+  generator = () => _obj,
+  args = [],
+  expected: _expected,
+  assert = (result, msg) => t.equal(result, _expected, msg),
+  afterCall = () => {}
+}) {
+  const tests = [
+    [obj => obj[name](...args), `obj.${name}(...args)`],
+    [obj => obj[name].apply(obj, args), `obj.${name}.apply(obj, args)`],
+    [obj => obj[name].bind(obj)(...args), `obj.${name}.bind(obj)(...args)`],
+    [obj => obj[name].bind(obj, ...args)(), `obj.${name}.bind(obj, ...args)()`],
+    [obj => obj[name].call(obj, ...args), `obj.${name}.call(obj, ...args)`] // eslint-disable-line no-useless-call
+  ]
+
+  for (const [test, msg] of tests) {
+    const obj = generator()
+    assert(test(obj), msg)
+    afterCall(obj)
+  }
+}
+
+function assertNoLeak (t, obj, name = '') {
+  t.ok(doesObjectLeak(obj) === false, `${name}${name ? ' ' : ''}should not leak Object.prototype`)
+}
+
+function doesObjectLeak (obj, seen = new Set(), indent = '') {
+  debug(`${indent}obj [root: ${obj === Object.prototype}]:`, obj)
+
+  if (obj === Object.prototype) return true
+
+  seen.add(obj)
+
+  debug(`${indent}obj.constructor [set: ${!!obj.constructor}, root: ${obj.constructor === Object.prototype}, seen: ${seen.has(obj.constructor)}]`)
+  if (obj.constructor && !seen.has(obj.constructor)) {
+    const result = doesObjectLeak(obj.constructor, seen, indent + '  ')
+    if (result === true) return true
+  }
+  debug(`${indent}obj.prototype [set: ${!!obj.prototype}, root: ${obj.prototype === Object.prototype}, seen: ${seen.has(obj.prototype)}]`)
+  if (obj.prototype && !seen.has(obj.prototype)) {
+    const result = doesObjectLeak(obj.prototype, seen, indent + '  ')
+    if (result === true) return true
+  }
+  debug(`${indent}obj.__proto__ [set: ${!!obj.__proto__}, root: ${obj.__proto__ === Object.prototype}, seen: ${seen.has(obj.__proto__)}]`)
+  if (obj.__proto__ && !seen.has(obj.__proto__)) {
+    const result = doesObjectLeak(obj.__proto__, seen, indent + '  ')
+    if (result === true) return true
+  }
+
+  return false
 }

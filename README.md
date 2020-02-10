@@ -72,6 +72,17 @@ object with all the same properties as the provided objects, but with
 This is equivalent to writing
 `Object.assign(Object.create(ObjectPrototype), ...objects)`.
 
+### `FunctionPrototype`
+
+The `FunctionPrototype` property exposed by this module is ment as a
+replacement to `Function.prototype` and exposes the same properties.
+
+### `function = safePrototypeFunction(function)`
+
+Given a function as the first argument, `safePrototypeFunction` will
+return another function which wraps the given function in a way so that
+it doesn't leak `Object.prototype`.
+
 ## License
 
 [MIT](LICENSE)
