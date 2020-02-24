@@ -79,9 +79,6 @@ exports.safePrototypeFunction = safePrototypeFunction
     },
     constructor: {
       value: undefined, // NOTE: This doesn't try to mimic the usual Object behavior
-      // value: safePrototypeFunction(function (...args) {
-      //   return safePrototypeFunction(new Function(...args))
-      // }, 'Function2'),
       writable: true,
       enumerable: false,
       configurable: true
