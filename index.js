@@ -123,7 +123,7 @@ exports.safePrototypeFunction = safePrototypeFunction
 
     // NOTE: I skipped overriding Function.prototype[Symbol.hasInstance] as
     // this function would only be called if `FunctionPrototype` is on the
-    // right hand side of the `instaceof` symbol.
+    // right hand side of the `instaceof` operator.
   }
 
   Object.setPrototypeOf(descriptors.apply, FunctionPrototype)
