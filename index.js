@@ -12,127 +12,118 @@ exports.assign = (...args) => Object.assign(exports.create(), ...args)
 exports.FunctionPrototype = FunctionPrototype
 exports.safePrototypeFunction = safePrototypeFunction
 
-// ObjectPrototype
-{
-  const descriptors = {
-    ['__proto__']: {
-      get: safePrototypeFunction(function () {
-        return Object.getPrototypeOf(this)
-      }),
-      set: safePrototypeFunction(function (proto) {
-        Object.setPrototypeOf(this, proto)
-      }),
-      enumerable: false,
-      configurable: true
-    },
-    constructor: {
-      value: undefined, // NOTE: This doesn't try to mimic the usual Object behavior
-      writable: true,
-      enumerable: false,
-      configurable: true
-    }
-  }
+/**
+ * ObjectPrototype
+ */
 
-  for (const name of functions) {
-    const descriptor = Object.getOwnPropertyDescriptor(Object.prototype, name)
-    descriptor.value = safePrototypeFunction(descriptor.value)
-    descriptors[name] = descriptor
+const descriptors = {
+  ['__proto__']: {
+    get: safePrototypeFunction(function () {
+      return Object.getPrototypeOf(this)
+    }),
+    set: safePrototypeFunction(function (proto) {
+      Object.setPrototypeOf(this, proto)
+    }),
+    enumerable: false,
+    configurable: true
+  },
+  constructor: {
+    value: undefined, // NOTE: This doesn't try to mimic the usual Object behavior
+    writable: true,
+    enumerable: false,
+    configurable: true
   }
-
-  Object.defineProperties(ObjectPrototype, descriptors)
 }
 
-// FunctionPrototype
-{
-  const descriptors = {
-    ['__proto__']: {
-      get: safePrototypeFunction(function () {
-        return Object.getPrototypeOf(this)
-      }),
-      set: safePrototypeFunction(function (proto) {
-        Object.setPrototypeOf(this, proto)
-      }),
-      enumerable: false,
-      configurable: true
-    },
-    length: { value: 0, writable: false, enumerable: false, configurable: true },
-    name: { value: '', writable: false, enumerable: false, configurable: true },
-    arguments: {
-      get: safePrototypeFunction(function () {
-        return Function.prototype.__lookupGetter__('arguments')()
-      }),
-      set: safePrototypeFunction(function (v) {
-        Function.prototype.__lookupSetter__('arguments')(v)
-      }),
-      enumerable: false,
-      configurable: true
-    },
-    caller: {
-      get: safePrototypeFunction(function () {
-        return Function.prototype.__lookupGetter__('caller')()
-      }),
-      set: safePrototypeFunction(function (v) {
-        Function.prototype.__lookupSetter__('caller')(v)
-      }),
-      enumerable: false,
-      configurable: true
-    },
-    constructor: {
-      value: undefined, // NOTE: This doesn't try to mimic the usual Object behavior
-      writable: true,
-      enumerable: false,
-      configurable: true
-    },
-    apply: {
-      value: function apply () {
-        return Function.prototype.apply.apply(this, arguments)
-      },
-      writable: true,
-      enumerable: false,
-      configurable: true
-    },
-    bind: {
-      value: function bind () {
-        const bound = Function.prototype.bind.apply(this, arguments)
-        Object.setPrototypeOf(bound, FunctionPrototype)
-        return bound
-      },
-      writable: true,
-      enumerable: false,
-      configurable: true
-    },
-    call: {
-      value: function call () {
-        return Function.prototype.call.apply(this, arguments)
-      },
-      writable: true,
-      enumerable: false,
-      configurable: true
-    },
-    toString: {
-      value: function toString () {
-        // TODO: Should we really do this?
-        return `function ${this.name}() { [native code] }`
-        // Alternatively we expose the normal behavior:
-        // return Function.prototype.toString.apply(this, arguments)
-      },
-      writable: true,
-      enumerable: false,
-      configurable: true
-    }
+for (const name of functions) {
+  const descriptor = Object.getOwnPropertyDescriptor(Object.prototype, name)
+  descriptor.value = safePrototypeFunction(descriptor.value)
+  descriptors[name] = descriptor
+}
 
-    // NOTE: I skipped overriding Function.prototype[Symbol.hasInstance] as
-    // this function would only be called if `FunctionPrototype` is on the
-    // right hand side of the `instaceof` operator.
+Object.defineProperties(ObjectPrototype, descriptors)
+
+/**
+ * FunctionPrototype
+ */
+
+Object.defineProperties(FunctionPrototype, {
+  ['__proto__']: {
+    get: safePrototypeFunction(function () {
+      return Object.getPrototypeOf(this)
+    }),
+    set: safePrototypeFunction(function (proto) {
+      Object.setPrototypeOf(this, proto)
+    }),
+    enumerable: false,
+    configurable: true
+  },
+  length: { value: 0, writable: false, enumerable: false, configurable: true },
+  name: { value: '', writable: false, enumerable: false, configurable: true },
+  arguments: {
+    get: safePrototypeFunction(function () {
+      return Function.prototype.__lookupGetter__('arguments')()
+    }),
+    set: safePrototypeFunction(function (v) {
+      Function.prototype.__lookupSetter__('arguments')(v)
+    }),
+    enumerable: false,
+    configurable: true
+  },
+  caller: {
+    get: safePrototypeFunction(function () {
+      return Function.prototype.__lookupGetter__('caller')()
+    }),
+    set: safePrototypeFunction(function (v) {
+      Function.prototype.__lookupSetter__('caller')(v)
+    }),
+    enumerable: false,
+    configurable: true
+  },
+  constructor: {
+    value: undefined, // NOTE: This doesn't try to mimic the usual Object behavior
+    writable: true,
+    enumerable: false,
+    configurable: true
+  },
+  apply: {
+    value: safePrototypeFunction(Function.prototype.apply),
+    writable: true,
+    enumerable: false,
+    configurable: true
+  },
+  bind: {
+    value: safePrototypeFunction(function bind () {
+      const bound = Function.prototype.bind.apply(this, arguments)
+      Object.setPrototypeOf(bound, FunctionPrototype)
+      return bound
+    }),
+    writable: true,
+    enumerable: false,
+    configurable: true
+  },
+  call: {
+    value: safePrototypeFunction(Function.prototype.call),
+    writable: true,
+    enumerable: false,
+    configurable: true
+  },
+  toString: {
+    value: safePrototypeFunction(function toString () {
+      // TODO: Should we really do this?
+      return `function ${this.name}() { [native code] }`
+      // Alternatively we expose the normal behavior:
+      // return Function.prototype.toString.apply(this, arguments)
+    }),
+    writable: true,
+    enumerable: false,
+    configurable: true
   }
 
-  Object.setPrototypeOf(descriptors.apply, FunctionPrototype)
-  Object.setPrototypeOf(descriptors.bind, FunctionPrototype)
-  Object.setPrototypeOf(descriptors.call, FunctionPrototype)
-  Object.setPrototypeOf(descriptors.toString, FunctionPrototype)
-
-  Object.defineProperties(FunctionPrototype, descriptors)
-}
+  // NOTE: I skipped overriding Function.prototype[Symbol.hasInstance] as
+  // this function would only be called if `FunctionPrototype` is on the
+  // right hand side of the `instaceof` operator.
+})
 
 function safePrototypeFunction (original, name) {
   name = name || original.name

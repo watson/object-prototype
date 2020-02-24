@@ -19,10 +19,14 @@ test('doesObjectLeak', function (t) {
   t.end()
 })
 
+test('safePrototypeFunction doesn\'t leak', function (t) {
+  var fn = safePrototypeFunction(function () {})
+  assertNoLeak(t, fn)
+  t.end()
+})
+
 test('FunctionPrototype.__proto__', function (t) {
   t.equal(FunctionPrototype.__proto__, ObjectPrototype)
-  assertNoLeak(t, FunctionPrototype.__lookupGetter__('__proto__'), 'FunctionPrototype.__lookupGetter__(\'__proto__\')')
-  assertNoLeak(t, FunctionPrototype.__lookupSetter__('__proto__'), 'FunctionPrototype.__lookupSetter__(\'__proto__\')')
   t.end()
 })
 
@@ -58,18 +62,6 @@ test('FunctionPrototype.name', function (t) {
   t.end()
 })
 
-test('FunctionPrototype.arguments', function (t) {
-  assertNoLeak(t, FunctionPrototype.__lookupGetter__('arguments'), 'FunctionPrototype.__lookupGetter__(\'arguments\')')
-  assertNoLeak(t, FunctionPrototype.__lookupSetter__('arguments'), 'FunctionPrototype.__lookupSetter__(\'arguments\')')
-  t.end()
-})
-
-test('FunctionPrototype.caller', function (t) {
-  assertNoLeak(t, FunctionPrototype.__lookupGetter__('caller'), 'FunctionPrototype.__lookupGetter__(\'caller\')')
-  assertNoLeak(t, FunctionPrototype.__lookupSetter__('caller'), 'FunctionPrototype.__lookupSetter__(\'caller\')')
-  t.end()
-})
-
 test('Object.getPrototypeOf(FunctionPrototype)', function (t) {
   t.equal(Object.getPrototypeOf(FunctionPrototype), ObjectPrototype)
   t.end()
@@ -91,16 +83,34 @@ test('FunctionPrototype doesn\'t leak', function (t) {
   t.end()
 })
 
-test('safePrototypeFunction doesn\'t leak', function (t) {
-  var fn = safePrototypeFunction(function () {})
-  assertNoLeak(t, fn)
+test('FunctionPrototype functions doesn\'t leak', function (t) {
+  const descriptors = Object.getOwnPropertyDescriptors(FunctionPrototype)
+  for (const [name, descriptor] of Object.entries(descriptors)) {
+    if (typeof descriptor.value === 'function') {
+      assertNoLeak(t, descriptor.value, name)
+    } else if (typeof descriptor.get === 'function') {
+      assertNoLeak(t, descriptor.get, `${name} getter`)
+      assertNoLeak(t, descriptor.set, `${name} setter`)
+    }
+  }
+  t.end()
+})
+
+test('ObjectPrototype functions doesn\'t leak', function (t) {
+  const descriptors = Object.getOwnPropertyDescriptors(ObjectPrototype)
+  for (const [name, descriptor] of Object.entries(descriptors)) {
+    if (typeof descriptor.value === 'function') {
+      assertNoLeak(t, descriptor.value, name)
+    } else if (typeof descriptor.get === 'function') {
+      assertNoLeak(t, descriptor.get, `${name} getter`)
+      assertNoLeak(t, descriptor.set, `${name} setter`)
+    }
+  }
   t.end()
 })
 
 test('ObjectPrototype.__proto__', function (t) {
   t.equal(ObjectPrototype.__proto__, null)
-  assertNoLeak(t, ObjectPrototype.__lookupGetter__('__proto__'), 'ObjectPrototype.__lookupGetter__(\'__proto__\')')
-  assertNoLeak(t, ObjectPrototype.__lookupSetter__('__proto__'), 'ObjectPrototype.__lookupSetter__(\'__proto__\')')
   t.end()
 })
 
@@ -125,6 +135,11 @@ generators.forEach(generator => {
     const obj = generator()
     for (const name of functions) {
       assertNoLeak(t, obj[name], name)
+      assertNoLeak(t, obj[name].constructor, `${name}.constructor`)
+      assertNoLeak(t, obj[name].bind, `${name}.bind`)
+      assertNoLeak(t, obj[name].apply, `${name}.apply`)
+      assertNoLeak(t, obj[name].call, `${name}.call`)
+      assertNoLeak(t, obj[name].toString, `${name}.toString`)
     }
     t.end()
   })
@@ -376,6 +391,7 @@ function assertNoLeak (t, obj, name = '') {
 function doesObjectLeak (obj, seen = new Set(), indent = '') {
   debug(`${indent}obj [root: ${obj === Object.prototype}]:`, obj)
 
+  if (obj === null || obj === undefined) return false
   if (obj === Object.prototype) return true
 
   seen.add(obj)
