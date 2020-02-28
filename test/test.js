@@ -20,7 +20,7 @@ test('doesObjectLeak', function (t) {
 })
 
 test('safePrototypeFunction doesn\'t leak', function (t) {
-  var fn = safePrototypeFunction(function () {})
+  const fn = safePrototypeFunction(function () {})
   assertNoLeak(t, fn)
   t.end()
 })
@@ -75,7 +75,7 @@ test('FunctionPrototype.constructor', function (t) {
 test('FunctionPrototype doesn\'t leak', function (t) {
   assertNoLeak(t, FunctionPrototype)
 
-  var fn = function () {}
+  const fn = function () {}
   Object.setPrototypeOf(fn, FunctionPrototype)
   fn.prototype.__proto__ = FunctionPrototype
 
