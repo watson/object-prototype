@@ -1,6 +1,7 @@
 'use strict'
 
 const functions = require('object-prototype-functions').nodejs
+const wrap = require('./lib/wrap_function')
 
 const ObjectPrototype = Object.create(null)
 const FunctionPrototype = Object.create(ObjectPrototype)
@@ -118,7 +119,7 @@ Object.defineProperties(FunctionPrototype, {
 })
 
 function safePrototypeFunction (original, name) {
-  name = name || original.name
+  const wrapped = wrap(name || original.name, original)
 
   // In strict mode, the expected descriptors are: length, name, prototype
   // In non-strict mode, the expected descriptors are: length, name, arguments, caller, prototype
@@ -126,15 +127,7 @@ function safePrototypeFunction (original, name) {
   delete descriptors.name // will be set automatally when the function is created below
   delete descriptors.prototype // we'll use the `wrapped` functions own `prototype` property
 
-  // Hack to give the function the same name as the original
-  const wrapped = ({
-    [name]: function () {
-      return original.apply(this, arguments)
-    }
-  })[name]
-
   Object.defineProperties(wrapped, descriptors)
-
   Object.setPrototypeOf(wrapped, FunctionPrototype)
   Object.setPrototypeOf(wrapped.prototype, ObjectPrototype)
 

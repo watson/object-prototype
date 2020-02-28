@@ -5,7 +5,14 @@
 const test = require('tape')
 const debug = require('debug')('tests')
 const functions = require('object-prototype-functions').nodejs
+const { sloppy, strict } = require('./functions')
 const { create, assign, ObjectPrototype, FunctionPrototype, safePrototypeFunction } = require('../')
+
+test('isSloppy', function (t) {
+  t.equal(isSloppy(sloppy), true)
+  t.equal(isSloppy(strict), false)
+  t.end()
+})
 
 test('doesObjectLeak', function (t) {
   t.ok(doesObjectLeak(function () {}))
@@ -16,6 +23,12 @@ test('doesObjectLeak', function (t) {
   t.ok(doesObjectLeak(Object.prototype))
   t.ok(doesObjectLeak(Function.prototype))
   t.notOk(doesObjectLeak(Object.create(null)))
+  t.end()
+})
+
+test('safePrototypeFunction maintains strictness', function (t) {
+  t.equal(isSloppy(safePrototypeFunction(sloppy)), true)
+  t.equal(isSloppy(safePrototypeFunction(strict)), false)
   t.end()
 })
 
@@ -336,25 +349,35 @@ function assertNonExecutingFunctionPrototypeFunctions (t, name, {
 }) {
   const obj = generator()
 
-  // TODO: This is only the case in script-mode. How do we support and test non-script mode?
-  t.throws(function () {
-    obj[name].arguments // eslint-disable-line no-unused-expressions
-  }, '\'caller\', \'callee\', and \'arguments\' properties may not be accessed on strict mode functions or the arguments objects for calls to them', `${name}.arguments`)
+  t.throws(
+    function () {
+      obj[name].arguments // eslint-disable-line no-unused-expressions
+    },
+    /'caller', 'callee', and 'arguments' properties may not be accessed on strict mode functions or the arguments objects for calls to them/,
+    `strict: obj.${name}.arguments`
+  )
+  t.throws(
+    function () {
+      obj[name].arguments = 42
+    },
+    /'caller', 'callee', and 'arguments' properties may not be accessed on strict mode functions or the arguments objects for calls to them/,
+    `strict: obj.${name}.arguments =`
+  )
 
-  // TODO: This is only the case in script-mode. How do we support and test non-script mode?
-  t.throws(function () {
-    obj[name].arguments = 42
-  }, '\'caller\', \'callee\', and \'arguments\' properties may not be accessed on strict mode functions or the arguments objects for calls to them', `obj.${name}.arguments =`)
-
-  // TODO: This is only the case in script-mode. How do we support and test non-script mode?
-  t.throws(function () {
-    obj[name].caller // eslint-disable-line no-unused-expressions
-  }, '\'caller\', \'callee\', and \'arguments\' properties may not be accessed on strict mode functions or the arguments objects for calls to them', `obj.${name}.caller`)
-
-  // TODO: This is only the case in script-mode. How do we support and test non-script mode?
-  t.throws(function () {
-    obj[name].caller = 42
-  }, '\'caller\', \'callee\', and \'arguments\' properties may not be accessed on strict mode functions or the arguments objects for calls to them', `obj.${name}.caller =`)
+  t.throws(
+    function () {
+      obj[name].caller // eslint-disable-line no-unused-expressions
+    },
+    /'caller', 'callee', and 'arguments' properties may not be accessed on strict mode functions or the arguments objects for calls to them/,
+    `strict: obj.${name}.caller`
+  )
+  t.throws(
+    function () {
+      obj[name].caller = 42
+    },
+    /'caller', 'callee', and 'arguments' properties may not be accessed on strict mode functions or the arguments objects for calls to them/,
+    `strict: obj.${name}.caller =`
+  )
 
   t.equal(obj[name].toString(obj), ({})[name].toString(), `obj.${name}.toString()`)
 
@@ -413,4 +436,8 @@ function doesObjectLeak (obj, seen = new Set(), indent = '') {
   }
 
   return false
+}
+
+function isSloppy (fn) {
+  return Object.prototype.hasOwnProperty.call(fn, 'caller')
 }
