@@ -49,16 +49,6 @@ Object.defineProperties(ObjectPrototype, descriptors)
  */
 
 Object.defineProperties(FunctionPrototype, {
-  ['__proto__']: {
-    get: safePrototypeFunction(function () {
-      return Object.getPrototypeOf(this)
-    }),
-    set: safePrototypeFunction(function (proto) {
-      Object.setPrototypeOf(this, proto)
-    }),
-    enumerable: false,
-    configurable: true
-  },
   length: { value: 0, writable: false, enumerable: false, configurable: true },
   name: { value: '', writable: false, enumerable: false, configurable: true },
   arguments: {
