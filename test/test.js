@@ -5,7 +5,7 @@
 const test = require('tape')
 const debug = require('debug')('tests')
 const functions = require('object-prototype-functions').nodejs
-const { create, assign, ObjectPrototype, FunctionPrototype, safePrototypeFunction } = require('./')
+const { create, assign, ObjectPrototype, FunctionPrototype, safePrototypeFunction } = require('../')
 
 test('doesObjectLeak', function (t) {
   t.ok(doesObjectLeak(function () {}))
