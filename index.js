@@ -61,22 +61,14 @@ Object.defineProperties(FunctionPrototype, {
   length: { value: 0, writable: false, enumerable: false, configurable: true },
   name: { value: '', writable: false, enumerable: false, configurable: true },
   arguments: {
-    get: safePrototypeFunction(function () {
-      return Function.prototype.__lookupGetter__('arguments')()
-    }),
-    set: safePrototypeFunction(function (v) {
-      Function.prototype.__lookupSetter__('arguments')(v)
-    }),
+    get: safePrototypeFunction(Function.prototype.__lookupGetter__('arguments')),
+    set: safePrototypeFunction(Function.prototype.__lookupSetter__('arguments')),
     enumerable: false,
     configurable: true
   },
   caller: {
-    get: safePrototypeFunction(function () {
-      return Function.prototype.__lookupGetter__('caller')()
-    }),
-    set: safePrototypeFunction(function (v) {
-      Function.prototype.__lookupSetter__('caller')(v)
-    }),
+    get: safePrototypeFunction(Function.prototype.__lookupGetter__('caller')),
+    set: safePrototypeFunction(Function.prototype.__lookupSetter__('caller')),
     enumerable: false,
     configurable: true
   },
